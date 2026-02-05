@@ -29,6 +29,22 @@ sns.set_theme(style="whitegrid", rc={"font.family": font_name})
 
 st.set_page_config(page_title="イオン 地域別業績分析ダッシュボード（四半期）", layout="wide")
 
+# --- Streamlitバージョン互換ヘルパー ---
+from packaging.version import Version as _V
+_st_ver = _V(st.__version__)
+
+def st_df(data, **kwargs):
+    """st.dataframe の width / use_container_width 互換ラッパー"""
+    if _st_ver >= _V("1.41.0"):
+        # 新API: width パラメータ
+        kwargs.pop("use_container_width", None)
+        kwargs.setdefault("width", "stretch")
+    else:
+        # 旧API: use_container_width パラメータ
+        kwargs.pop("width", None)
+        kwargs.setdefault("use_container_width", True)
+    st.dataframe(data, **kwargs)
+
 # --- 2. ユーティリティ関数 ---
 def get_html_report(df, title, fig=None):
     """HTMLダウンロード用データの生成（テーブル＋チャート）"""
@@ -185,7 +201,7 @@ if df_raw is not None:
         # 営業収益テーブル
         st.markdown("#### 営業収益一覧（百万円）")
         revenue_table = pivot_revenue.T
-        st.dataframe(revenue_table.style.format("{:,.0f}"), width='stretch')
+        st_df(revenue_table.style.format("{:,.0f}"))
         
         html_rev = get_html_report(revenue_table, "地域別営業収益の推移（四半期）", fig1)
         st.download_button("📥 HTMLでダウンロード（チャート＋テーブル）", html_rev, "地域別営業収益レポート_四半期.html", "text/html", key="rev_html")
@@ -213,7 +229,7 @@ if df_raw is not None:
         # 営業利益テーブル
         st.markdown("#### 営業利益一覧（百万円）")
         profit_table = pivot_profit.T
-        st.dataframe(profit_table.style.format("{:,.0f}"), width='stretch')
+        st_df(profit_table.style.format("{:,.0f}"))
         
         html_profit = get_html_report(profit_table, "地域別営業利益の推移（四半期）", fig2)
         st.download_button("📥 HTMLでダウンロード（チャート＋テーブル）", html_profit, "地域別営業利益レポート_四半期.html", "text/html", key="profit_html")
@@ -243,8 +259,7 @@ if df_raw is not None:
         
         st.markdown("#### 営業収益構成比一覧（%）")
         crosstab_rev_comp = pivot_rev_comp.T
-        st.dataframe(crosstab_rev_comp.style.format("{:.1f}").bar(subset=crosstab_rev_comp.columns, color='skyblue', vmin=0), 
-                     width='stretch')
+        st_df(crosstab_rev_comp.style.format("{:.1f}").bar(subset=crosstab_rev_comp.columns, color='skyblue', vmin=0))
         
         html_comp1 = get_html_report(crosstab_rev_comp, "営業収益構成比の推移（四半期）", fig3)
         st.download_button("📥 HTMLでダウンロード（チャート＋テーブル）", html_comp1, "営業収益構成比レポート_四半期.html", "text/html", key="comp_rev_html")
@@ -270,7 +285,7 @@ if df_raw is not None:
         
         st.markdown("#### 営業利益構成比一覧（%）")
         crosstab_profit_comp = pivot_profit_comp.T
-        st.dataframe(crosstab_profit_comp.style.format("{:.1f}"), width='stretch')
+        st_df(crosstab_profit_comp.style.format("{:.1f}"))
         
         html_comp2 = get_html_report(crosstab_profit_comp, "営業利益構成比の推移（四半期）", fig4)
         st.download_button("📥 HTMLでダウンロード（チャート＋テーブル）", html_comp2, "営業利益構成比レポート_四半期.html", "text/html", key="comp_profit_html")
@@ -301,7 +316,7 @@ if df_raw is not None:
         pivot_margin = df_filtered.pivot_table(
             index='決算年度', columns='地域', values='営業収益営業利益率', aggfunc='sum'
         ).reindex(selected_quarters).reindex(columns=region_list).T
-        st.dataframe(pivot_margin.style.format("{:.1f}"), width='stretch')
+        st_df(pivot_margin.style.format("{:.1f}"))
         
         html_margin = get_html_report(pivot_margin, "地域別営業利益率の推移（四半期）", fig5)
         st.download_button("📥 HTMLでダウンロード（チャート＋テーブル）", html_margin, "営業利益率レポート_四半期.html", "text/html", key="margin_html")
@@ -345,7 +360,7 @@ if df_raw is not None:
         pivot_yoy = yoy_filtered.pivot_table(
             index='決算年度', columns='地域', values='前年同期比', aggfunc='sum'
         ).reindex(selected_quarters).reindex(columns=region_list).T
-        st.dataframe(pivot_yoy.style.format("{:.1f}"), width='stretch')
+        st_df(pivot_yoy.style.format("{:.1f}"))
         
         html_yoy = get_html_report(pivot_yoy, "地域別営業収益 前年同期比成長率", fig6)
         st.download_button("📥 HTMLでダウンロード（チャート＋テーブル）", html_yoy, "前年同期比レポート.html", "text/html", key="yoy_html")
@@ -386,7 +401,7 @@ if df_raw is not None:
         pivot_yoy_profit = yoy_profit_filtered.pivot_table(
             index='決算年度', columns='地域', values='営業利益前年同期比', aggfunc='sum'
         ).reindex(selected_quarters).reindex(columns=region_list).T
-        st.dataframe(pivot_yoy_profit.style.format("{:.1f}"), width='stretch')
+        st_df(pivot_yoy_profit.style.format("{:.1f}"))
         
         html_yoy_profit = get_html_report(pivot_yoy_profit, "地域別営業利益 前年同期比成長率", fig7)
         st.download_button("📥 HTMLでダウンロード（チャート＋テーブル）", html_yoy_profit, "営業利益前年同期比レポート.html", "text/html", key="yoy_profit_html")
@@ -424,7 +439,7 @@ if df_raw is not None:
         st.pyplot(fig8)
         
         st.markdown("#### 四半期別平均営業収益（百万円）")
-        st.dataframe(seasonal_rev.T.style.format("{:,.0f}"), width='stretch')
+        st_df(seasonal_rev.T.style.format("{:,.0f}"))
         
         st.divider()
         
@@ -450,7 +465,7 @@ if df_raw is not None:
         st.pyplot(fig9)
         
         st.markdown("#### 四半期別平均営業利益（百万円）")
-        st.dataframe(seasonal_profit.T.style.format("{:,.0f}"), width='stretch')
+        st_df(seasonal_profit.T.style.format("{:,.0f}"))
         
         st.divider()
         
@@ -473,7 +488,7 @@ if df_raw is not None:
         st.pyplot(fig10)
         
         st.markdown("#### 四半期別平均営業利益率（%）")
-        st.dataframe(seasonal_margin.T.style.format("{:.1f}"), width='stretch')
+        st_df(seasonal_margin.T.style.format("{:.1f}"))
         
         html_seasonal = get_html_report(seasonal_margin.T, "四半期別季節性分析", fig10)
         st.download_button("📥 HTMLでダウンロード（チャート＋テーブル）", html_seasonal, "季節性分析レポート.html", "text/html", key="seasonal_html")
@@ -549,16 +564,15 @@ if df_raw is not None:
                 '前年同期比': '{:.1f}',
                 '営業利益率': '{:.1f}'
             }
-            st.dataframe(display_df.style.format(format_dict), width='stretch')
+            st_df(display_df.style.format(format_dict))
             
             # 構成比テーブル（横持ち・バーチャート風スタイル）
             st.markdown("#### 構成比推移")
             comp_df = reg_detail[['決算年度', '営業収益構成比', '営業利益構成比']].copy()
             comp_df = comp_df.set_index('決算年度').T
             
-            st.dataframe(
-                comp_df.style.format("{:.1f}%").bar(subset=comp_df.columns, color='skyblue', vmin=0),
-                width='stretch'
+            st_df(
+                comp_df.style.format("{:.1f}%").bar(subset=comp_df.columns, color='skyblue', vmin=0)
             )
             
             html_content = get_html_report(display_df, f"{selected_region} - 業績推移（四半期）", fig11)
